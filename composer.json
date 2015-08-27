@@ -1,0 +1,32 @@
+{
+    "name": "heimrichhannot/contao-avisota_subscription_recipient_plus",
+    "description":"Extends the avisota recipient sources with member data.",
+    "keywords":["contao", "avisota", "recipient", "subscription", "module", "developer"],
+    "type": "contao-module",
+    "homepage":"https://github.com/heimrichhannot/contao-avisota_subscription_recipient_plus",
+    "license":"LGPL-3.0+",
+    "authors":[
+        {
+            "name":"Heimrich & Hannot",
+            "email":"digitales@heimrich-hannot.de",
+            "homepage":"http://www.heimrich-hannot.de",
+            "role":"Developer"
+        }
+    ],
+    "support":{
+        "issues":"https://github.com/heimrichhannot/contao-avisota_subscription_recipient_plus/issues"
+    },
+    "require": {
+        "contao/core": ">=3.2,<4-dev"
+    },
+    "autoload": {
+        "classmap": [""]
+    },
+    "extra": {
+        "contao": {
+            "sources": {
+                "": "system/modules/avisota_subscription_recipient_plus"
+            }
+        }
+    }
+}
