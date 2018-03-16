@@ -26,195 +26,232 @@ use Contao\Doctrine\ORM\EntityHelper;
 class CSVFileRecipientSourceSalutations implements RecipientSourceInterface
 {
 
-	private $file;
+    private $file;
 
-	private $columnAssignment;
+    private $columnAssignment;
 
-	private $delimiter;
+    private $delimiter;
 
-	private $enclosure;
+    private $enclosure;
 
-	private $escape;
+    private $escape;
 
-	/**
-	 * @var \Swift_Mime_Grammar
-	 */
-	private $grammar;
+    /**
+     * @var \Swift_Mime_Grammar
+     */
+    private $grammar;
 
-	/**
-	 * @param string $fileData
-	 */
-	public function __construct($file, array $columnAssignment, $delimiter = ',', $enclosure = '"', $escape = '\\')
-	{
-		$this->file             = (string) $file;
-		$this->columnAssignment = $columnAssignment;
-		$this->delimiter        = $delimiter;
-		$this->enclosure        = $enclosure;
-		$this->escape           = $escape;
-	}
+    /**
+     * @param string $fileData
+     */
+    public function __construct($file, array $columnAssignment, $delimiter = ',', $enclosure = '"', $escape = '\\')
+    {
+        $this->file             = (string) $file;
+        $this->columnAssignment = $columnAssignment;
+        $this->delimiter        = $delimiter;
+        $this->enclosure        = $enclosure;
+        $this->escape           = $escape;
+    }
 
-	/**
-	 * @return \Swift_Mime_Grammar
-	 */
-	public function getGrammar()
-	{
-		if (!$this->grammar) {
-			$this->grammar = new \Swift_Mime_Grammar();
-		}
-		return $this->grammar;
-	}
+    /**
+     * @return \Swift_Mime_Grammar
+     */
+    public function getGrammar()
+    {
+        if (!$this->grammar)
+        {
+            $this->grammar = new \Swift_Mime_Grammar();
+        }
 
-	/**
-	 * @param \Swift_Mime_Grammar $grammar
-	 *
-	 * @return CSVFile
-	 */
-	public function setGrammar(\Swift_Mime_Grammar $grammar)
-	{
-		$this->grammar = $grammar;
-		return $this;
-	}
+        return $this->grammar;
+    }
 
-	/**
-	 * Count the recipients.
-	 *
-	 * @return int
-	 */
-	public function countRecipients()
-	{
-		$in = fopen($this->file, 'r');
+    /**
+     * @param \Swift_Mime_Grammar $grammar
+     *
+     * @return CSVFile
+     */
+    public function setGrammar(\Swift_Mime_Grammar $grammar)
+    {
+        $this->grammar = $grammar;
 
-		if (!$in) {
-			return 0;
-		}
+        return $this;
+    }
 
-		$recipients = 0;
-		$regexp     = '/^' . $this->getGrammar()->getDefinition('addr-spec') . '$/D';
-		$index      = array_search('email', $this->columnAssignment);
-		$emails     = array();
+    /**
+     * Count the recipients.
+     *
+     * @return int
+     */
+    public function countRecipients()
+    {
+        $in = fopen($this->file, 'r');
 
-		while ($row = fgetcsv($in, 0, $this->delimiter, $this->enclosure, $this->escape)) {
-			$email = trim($row[$index]);
+        if (!$in)
+        {
+            return 0;
+        }
 
-			if (!empty($email) && preg_match($regexp, $email) && !in_array($email, $emails)) {
-				$recipients++;
-				$emails[] = $email;
-			}
-		}
+        $recipients = 0;
+        $regexp     = '/^' . $this->getGrammar()->getDefinition('addr-spec') . '$/D';
+        $index      = array_search('email', $this->columnAssignment);
+        $emails     = [];
 
-		fclose($in);
+        while ($row = fgetcsv($in, 0, $this->delimiter, $this->enclosure, $this->escape))
+        {
+            $email = trim($row[$index]);
 
-		return $recipients;
-	}
+            if (!empty($email) && preg_match($regexp, $email) && !in_array($email, $emails))
+            {
+                $recipients++;
+                $emails[] = $email;
+            }
+        }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function getRecipients($limit = null, $offset = null)
-	{
-		$in = fopen($this->file, 'r');
+        fclose($in);
 
-		if (!$in) {
-			return null;
-		}
+        return $recipients;
+    }
 
-		$recipients = array();
-		$regexp     = '/^' . $this->getGrammar()->getDefinition('addr-spec') . '$/D';
-		$index      = array_search('email', $this->columnAssignment);
-		$emails     = array();
+    /**
+     * {@inheritdoc}
+     */
+    public function getRecipients($limit = null, $offset = null)
+    {
+        $in = fopen($this->file, 'r');
 
-		// skip offset lines
-		for (; $offset > 0 && !feof($in); $offset--) {
-			$row   = fgetcsv($in, 0, $this->delimiter, $this->enclosure, $this->escape);
-			$email = trim($row[$index]);
+        if (!$in)
+        {
+            return null;
+        }
 
-			// skip invalid lines without counting them
-			if (empty($email) || !preg_match($regexp, $email) || in_array($email, $emails)) {
-				$offset++;
-			}
-			else {
-				$emails[] = $email;
-			}
-		}
+        $recipients = [];
+        $regexp     = '/^' . $this->getGrammar()->getDefinition('addr-spec') . '$/D';
+        $index      = array_search('email', $this->columnAssignment);
+        $emails     = [];
 
-		// read lines
-		while (
-			(!$limit || count($recipients) < $limit) &&
-			$row = fgetcsv($in, 0, $this->delimiter, $this->enclosure, $this->escape)
-		) {
-			$details = array();
+        // skip offset lines
+        for (; $offset > 0 && !feof($in); $offset--)
+        {
+            $row   = fgetcsv($in, 0, $this->delimiter, $this->enclosure, $this->escape);
+            $email = trim($row[$index]);
 
-			foreach ($this->columnAssignment as $index => $field) {
-				if (isset($row[$index])) {
-					$details[$field] = trim($row[$index]);
-				}
-			}
+            // skip invalid lines without counting them
+            if (empty($email) || !preg_match($regexp, $email) || in_array($email, $emails))
+            {
+                $offset++;
+            }
+            else
+            {
+                $emails[] = $email;
+            }
+        }
 
-			if (
-				!empty($details['email']) &&
-				preg_match($regexp, $details['email']) &&
-				!in_array($details['email'], $emails)
-			) {
-				$details = static::addMemberProperties($details);
-				$recipients[] = new MutableRecipient($details['email'], $details);
-				$emails[]     = $details['email'];
-			}
-		}
+        // read lines
+        while ((!$limit || count($recipients) < $limit)
+               && $row = fgetcsv($in, 0, $this->delimiter, $this->enclosure, $this->escape))
+        {
+            $details = [];
 
-		fclose($in);
+            foreach ($this->columnAssignment as $index => $field)
+            {
+                if (isset($row[$index]))
+                {
+                    $details[$field] = trim($row[$index]);
+                }
+            }
 
-		return $recipients;
-	}
+            if (!empty($details['email'])
+                && preg_match($regexp, $details['email'])
+                && !in_array($details['email'], $emails)
+            )
+            {
+                $details = static::addMemberProperties($details);
 
-	public static function addMemberProperties($arrDetails)
-	{
-		$arrRecipientFields = array();
+                $email = $details['email'];
 
-		\Controller::loadDataContainer('orm_avisota_recipient');
+                if (!static::checkIfUnsubscribed($email))
+                {
+                    $recipients[] = new MutableRecipient($email, $details);
+                    $emails[]     = $email;
+                }
+            }
+        }
 
-		foreach ($GLOBALS['TL_DCA']['orm_avisota_recipient']['metapalettes']['default'] as $strPalette => $arrFields)
-		{
-			$arrRecipientFields = array_merge($arrRecipientFields, $arrFields);
-		}
+        fclose($in);
 
-		$objMember = \MemberModel::findByEmail($arrDetails['email']);
+        return $recipients;
+    }
 
-		foreach ($arrRecipientFields as $strName)
-		{
-			// ignore member data if a csv column is already there
-			if ($arrDetails[$strName])
-				continue;
+    public static function checkIfUnsubscribed($email)
+    {
+        if (null === ($member = \MemberModel::findByEmail($email)))
+        {
+            return true;
+        }
 
-			// ignore salutations inserted in the backend
-			if ($strName == 'salutation')
-				continue;
+        return $member->skipAvisotaEmails;
+    }
 
-			if ($strName != 'email')
-				$arrDetails[$strName] = '';
+    public static function addMemberProperties($arrDetails)
+    {
+        $arrRecipientFields = [];
 
-			// enhance with member data if existing
-			if ($objMember !== null)
-			{
-				if ($objMember->$strName)
-					$arrDetails[$strName] = $objMember->$strName;
-				else
-				{
-					// try synonyms
-					$synonymizer = $GLOBALS['container']['avisota.recipient.synonymizer'];
-					$arrSynonyms    = $synonymizer->findSynonyms($strName);
+        \Controller::loadDataContainer('orm_avisota_recipient');
 
-					if ($arrSynonyms) {
-						foreach ($arrSynonyms as $strSynonym) {
-							if ($objMember->$strSynonym)
-							{
-								$arrDetails[$strName] = $objMember->$strSynonym;
-							}
-						}
-					}
-				}
-			}
-		}
+        foreach ($GLOBALS['TL_DCA']['orm_avisota_recipient']['metapalettes']['default'] as $strPalette => $arrFields)
+        {
+            $arrRecipientFields = array_merge($arrRecipientFields, $arrFields);
+        }
 
-		return $arrDetails;
-	}
+        $objMember = \MemberModel::findByEmail($arrDetails['email']);
+
+        foreach ($arrRecipientFields as $strName)
+        {
+            // ignore member data if a csv column is already there
+            if ($arrDetails[$strName])
+            {
+                continue;
+            }
+
+            // ignore salutations inserted in the backend
+            if ($strName == 'salutation')
+            {
+                continue;
+            }
+
+            if ($strName != 'email')
+            {
+                $arrDetails[$strName] = '';
+            }
+
+            // enhance with member data if existing
+            if ($objMember !== null)
+            {
+                if ($objMember->$strName)
+                {
+                    $arrDetails[$strName] = $objMember->$strName;
+                }
+                else
+                {
+                    // try synonyms
+                    $synonymizer = $GLOBALS['container']['avisota.recipient.synonymizer'];
+                    $arrSynonyms = $synonymizer->findSynonyms($strName);
+
+                    if ($arrSynonyms)
+                    {
+                        foreach ($arrSynonyms as $strSynonym)
+                        {
+                            if ($objMember->$strSynonym)
+                            {
+                                $arrDetails[$strName] = $objMember->$strSynonym;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return $arrDetails;
+    }
 }

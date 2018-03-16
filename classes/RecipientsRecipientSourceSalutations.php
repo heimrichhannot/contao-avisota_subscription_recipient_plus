@@ -97,10 +97,13 @@ class RecipientsRecipientSourceSalutations extends \Avisota\Contao\SubscriptionR
 				);
 			}
 
-			$mutableRecipients[] = new MutableRecipient(
-				$recipient->getEmail(),
-				$properties
-			);
+            if (!CSVFileRecipientSourceSalutations::checkIfUnsubscribed($recipient->getEmail()))
+            {
+                $mutableRecipients[] = new MutableRecipient(
+                    $recipient->getEmail(),
+                    $properties
+                );
+            }
 		}
 
 		return $mutableRecipients;
